@@ -3,9 +3,11 @@ import { config } from "dotenv";
 import { Client, Intents } from "discord.js";
 import { PrismaClient } from "@prisma/client";
 
+import { express } from "express";
+
 config();
 
-const { BOT_TOKEN, HEROKU_RELEASE_VERSION } = process.env;
+const { BOT_TOKEN, HEROKU_RELEASE_VERSION, PORT } = process.env;
 const admin_id = "198976694558785537";
 const prisma = new PrismaClient();
 
@@ -168,3 +170,9 @@ async function setNotLiveChannel(channel: VoiceChannel | StageChannel) {
 }
 
 client.login(BOT_TOKEN);
+
+const app = express();
+
+app.listen(PORT, () => {
+  console.log(`Listening on port ${PORT}`);
+});
