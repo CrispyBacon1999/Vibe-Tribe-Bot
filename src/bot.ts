@@ -19,7 +19,7 @@ const client = new Client({
 
 client.once("ready", () => {
   console.log("Ready!");
-  client.user?.setActivity("Watching for streams");
+  client.user?.setActivity("Voice Chats", { type: "WATCHING" });
 });
 
 client.on("interactionCreate", async (interaction) => {
