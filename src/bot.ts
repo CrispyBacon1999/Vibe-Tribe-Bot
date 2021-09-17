@@ -5,7 +5,7 @@ import { PrismaClient } from "@prisma/client";
 
 config();
 
-const { BOT_TOKEN } = process.env;
+const { BOT_TOKEN, HEROKU_RELEASE_VERSION } = process.env;
 const admin_id = "198976694558785537";
 const prisma = new PrismaClient();
 
@@ -19,7 +19,12 @@ const client = new Client({
 
 client.once("ready", () => {
   console.log("Ready!");
-  client.user?.setActivity("Voice Chats", { type: "WATCHING" });
+  client.user?.setActivity(
+    `Voice Chats${
+      HEROKU_RELEASE_VERSION ? " : " + HEROKU_RELEASE_VERSION : ""
+    }`,
+    { type: "WATCHING" }
+  );
 });
 
 client.on("interactionCreate", async (interaction) => {
