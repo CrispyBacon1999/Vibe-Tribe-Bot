@@ -3,7 +3,7 @@ import { config } from "dotenv";
 import { Client, Intents } from "discord.js";
 import { PrismaClient } from "@prisma/client";
 
-import express from "express";
+import * as express from "express";
 
 config();
 
