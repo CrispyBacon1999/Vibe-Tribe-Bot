@@ -3,7 +3,7 @@ import { config } from "dotenv";
 import { Client, Intents } from "discord.js";
 import { PrismaClient } from "@prisma/client";
 
-import { express } from "express";
+import express from "express";
 
 config();
 
@@ -172,6 +172,10 @@ async function setNotLiveChannel(channel: VoiceChannel | StageChannel) {
 client.login(BOT_TOKEN);
 
 const app = express();
+
+app.get("/", (req, res) => {
+  res.send("Vibe tribeee");
+});
 
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}`);
