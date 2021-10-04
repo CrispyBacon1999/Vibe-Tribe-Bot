@@ -8,7 +8,7 @@ import { config } from "dotenv";
 import { Client, Intents } from "discord.js";
 import { PrismaClient } from "@prisma/client";
 
-import * as express from "express";
+import express from "express";
 import { play, skip, stop } from "./musicBot";
 
 config();
