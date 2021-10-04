@@ -83,6 +83,7 @@ client.on("message", async (message) => {
 
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
+    console.log(command, args);
 
     if (command === "deploy" && message.author.id === admin_id) {
         await message.guild.commands.set([
