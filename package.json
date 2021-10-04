@@ -25,6 +25,7 @@
     "express": "^4.17.1",
     "ffmpeg": "^0.0.4",
     "fluent-ffmpeg": "^2.1.2",
+    "libsodium-wrappers": "^0.7.9",
     "typescript": "^4.4.3",
     "ytdl-core": "^4.9.1"
   },
