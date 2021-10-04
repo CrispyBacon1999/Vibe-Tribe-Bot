@@ -15,6 +15,7 @@ import {
     NoSubscriberBehavior,
     VoiceConnection,
     VoiceConnectionStatus,
+    StreamType,
 } from "@discordjs/voice";
 import ytdl from "ytdl-core";
 
@@ -130,9 +131,14 @@ async function playSong(guild: Guild, song: Song) {
 
     console.log("Playing song: ", song);
 
-    const resource = createAudioResource(
-        ytdl(song.url, { filter: "audioonly" })
-    );
+    const stream = await ytdl(song.url, {
+        filter: "audioonly",
+        quality: "highestaudio",
+    });
+
+    const resource = createAudioResource(stream, {
+        inputType: StreamType.Opus,
+    });
 
     serverQueue.player.play(resource);
 
