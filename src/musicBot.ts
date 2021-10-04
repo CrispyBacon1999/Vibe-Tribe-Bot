@@ -141,10 +141,14 @@ async function playSong(guild: Guild, song: Song) {
     });
 
     serverQueue.player.play(resource);
-
-    serverQueue.player.once(AudioPlayerStatus.Idle, () => {
-        serverQueue.songs.shift();
-        playSong(guild, serverQueue.songs[0]);
+    serverQueue.player.once(AudioPlayerStatus.Playing, () => {
+        console.log("Playing");
+        setTimeout(() => {
+            serverQueue.player.once(AudioPlayerStatus.Idle, () => {
+                serverQueue.songs.shift();
+                playSong(guild, serverQueue.songs[0]);
+            });
+        }, 2000);
     });
 
     // dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
