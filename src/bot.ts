@@ -35,14 +35,6 @@ client.once("ready", () => {
     );
 });
 
-client.on("interactionCreate", async (interaction) => {
-    if (!interaction.isCommand()) return;
-
-    const { commandName } = interaction;
-
-    console.log(commandName);
-});
-
 client.on("voiceStateUpdate", async (oldMember, newMember) => {
     if (oldMember.member.user.bot) return;
     if (newMember.member.user.bot) return;
@@ -74,6 +66,8 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
 });
 
 client.on("message", async (message) => {
+    console.log(message.content);
+
     if (message.author.bot) return;
     if (message.channel.type === "DM") return;
 
