@@ -44,7 +44,7 @@ export async function play(message: Message | CommandInteraction) {
         args = message.options.get("song")!.value! as string;
     }
     const voiceChannel =
-        message instanceof CommandInteraction &&
+        (message instanceof CommandInteraction || message instanceof Message) &&
         message.member instanceof GuildMember
             ? message.member.voice.channel
             : null;
@@ -65,6 +65,8 @@ export async function play(message: Message | CommandInteraction) {
         url: songInfo.videoDetails.video_url,
     };
 
+    console.log(song);
+
     const serverQueue = queue.get(message.guild.id);
     if (!serverQueue) {
         const queueContract: QueueContract = {
@@ -79,6 +81,8 @@ export async function play(message: Message | CommandInteraction) {
 
         queue.set(message.guild.id, queueContract);
         queueContract.songs.push(song);
+
+        console.log(queueContract.songs);
 
         try {
             const connection = joinVoiceChannel({
@@ -97,6 +101,7 @@ export async function play(message: Message | CommandInteraction) {
             queueContract.connection = connection;
             connection.once("stateChange", (oldState, newState) => {
                 if (newState.status === VoiceConnectionStatus.Ready) {
+                    console.log("Ready to play.");
                     playSong(message.guild, queueContract.songs[0]);
                 }
             });
@@ -125,11 +130,14 @@ async function playSong(guild: Guild, song: Song) {
         return;
     }
 
-    const resource = createAudioResource(ytdl(song.url));
+    console.log("Playing song: ", song);
 
-    const dispatcher = serverQueue.player
-        // .play(ytdl(song.url, { filter: "audioonly" }))
-        .play(resource);
+    const resource = createAudioResource(
+        ytdl(song.url, { filter: "audioonly" })
+    );
+
+    serverQueue.player.play(resource);
+
     serverQueue.player.on("stateChange", (oldState, newState) => {
         if (
             oldState.status === AudioPlayerStatus.Playing &&
