@@ -65,7 +65,7 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
     }
 });
 
-client.on("message", async (message) => {
+client.on("messageCreate", async (message) => {
     console.log(message.content);
 
     if (message.author.bot) return;
