@@ -6,7 +6,7 @@ import {
     Message,
 } from "discord.js";
 import { joinVoiceChannel, VoiceConnection } from "@discordjs/voice";
-import * as ytdl from "ytdl-core";
+import ytdl from "ytdl-core";
 
 const queue = new Map();
 
