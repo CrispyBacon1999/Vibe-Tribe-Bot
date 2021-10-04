@@ -4,19 +4,30 @@ import {
     GuildMember,
     Interaction,
     Message,
+    TextChannel,
 } from "discord.js";
-import { joinVoiceChannel, VoiceConnection } from "@discordjs/voice";
+import {
+    AudioPlayer,
+    AudioPlayerStatus,
+    createAudioPlayer,
+    createAudioResource,
+    joinVoiceChannel,
+    NoSubscriberBehavior,
+    VoiceConnection,
+    VoiceConnectionStatus,
+} from "@discordjs/voice";
 import ytdl from "ytdl-core";
 
-const queue = new Map();
+const queue = new Map<string, QueueContract>();
 
 type QueueContract = {
-    textChannel: string;
+    textChannel: TextChannel;
     voiceChannel: string;
     connection: VoiceConnection;
     songs: Song[];
     volume: number;
     playing: boolean;
+    player: AudioPlayer;
 };
 
 type Song = {
@@ -39,12 +50,12 @@ export async function play(message: Message | CommandInteraction) {
             : null;
 
     if (!voiceChannel)
-        return message.channel.send(
+        return message.reply(
             "You need to be in a voice channel to play music!"
         );
     const permissions = voiceChannel.permissionsFor(message.client.user);
     if (!permissions.has("CONNECT") || !permissions.has("SPEAK"))
-        return message.channel.send(
+        return message.reply(
             "I need the permissions to join and speak in your voice channel!"
         );
 
@@ -57,12 +68,13 @@ export async function play(message: Message | CommandInteraction) {
     const serverQueue = queue.get(message.guild.id);
     if (!serverQueue) {
         const queueContract: QueueContract = {
-            textChannel: message.channel.id,
+            textChannel: message.channel as TextChannel,
             voiceChannel: voiceChannel.id,
             connection: null,
             songs: [],
             volume: 5,
             playing: true,
+            player: null,
         };
 
         queue.set(message.guild.id, queueContract);
@@ -74,12 +86,24 @@ export async function play(message: Message | CommandInteraction) {
                 guildId: message.guild.id,
                 adapterCreator: voiceChannel.guild.voiceAdapterCreator,
             });
+
+            const player = createAudioPlayer({
+                behaviors: {
+                    noSubscriber: NoSubscriberBehavior.Pause,
+                },
+            });
+            connection.subscribe(player);
+            queueContract.player = player;
             queueContract.connection = connection;
-            playSong(message.guild, queueContract.songs[0]);
+            connection.once("stateChange", (oldState, newState) => {
+                if (newState.status === VoiceConnectionStatus.Ready) {
+                    playSong(message.guild, queueContract.songs[0]);
+                }
+            });
         } catch (error) {
             console.error(error);
             queue.delete(message.guild.id);
-            return message.channel.send(
+            return message.reply(
                 "I could not join the voice channel! Make sure I have the proper permissions!"
             );
         }
@@ -96,19 +120,27 @@ async function playSong(guild: Guild, song: Song) {
     const serverQueue = queue.get(guild.id);
 
     if (!song) {
-        serverQueue.voiceChannel.leave();
+        serverQueue.connection.destroy();
         queue.delete(guild.id);
         return;
     }
 
-    const dispatcher = serverQueue.connection
-        .play(ytdl(song.url, { filter: "audioonly" }))
-        .on("finish", () => {
+    const resource = createAudioResource(ytdl(song.url));
+
+    const dispatcher = serverQueue.player
+        // .play(ytdl(song.url, { filter: "audioonly" }))
+        .play(resource);
+    serverQueue.player.on("stateChange", (oldState, newState) => {
+        if (
+            oldState.status === AudioPlayerStatus.Playing &&
+            newState.status === AudioPlayerStatus.Idle
+        ) {
             serverQueue.songs.shift();
             playSong(guild, serverQueue.songs[0]);
-        })
-        .on("error", (error) => console.error(error));
-    dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+        }
+    });
+
+    // dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
     serverQueue.textChannel.send(`Now playing: **${song.title}**`);
 }
 
@@ -123,7 +155,8 @@ export async function skip(message: Message | CommandInteraction) {
         );
     }
     if (!serverQueue) return message.channel.send("There is no song to skip");
-    serverQueue.connection.dispatcher.end();
+    serverQueue.songs.shift();
+    playSong(message.guild, serverQueue.songs[0]);
 }
 
 export async function stop(message: Message | CommandInteraction) {
@@ -139,5 +172,6 @@ export async function stop(message: Message | CommandInteraction) {
     if (!serverQueue) return message.channel.send("There are no songs to stop");
 
     serverQueue.songs = [];
-    serverQueue.connection.dispatcher.end();
+    serverQueue.player.stop();
+    serverQueue.connection.destroy();
 }

@@ -23,6 +23,9 @@ const client = new Client({
         Intents.FLAGS.GUILD_MESSAGES,
         Intents.FLAGS.GUILD_VOICE_STATES,
         Intents.FLAGS.GUILD_PRESENCES,
+        Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
+        Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+        Intents.FLAGS.GUILD_MESSAGE_TYPING,
     ],
 });
 
@@ -118,7 +121,7 @@ client.on("interactionCreate", async (interaction: Interaction) => {
 
     if (interaction.commandName === "play") {
         await interaction.deferReply();
-        play(interaction);
+        await play(interaction);
     }
     if (interaction.commandName === "skip") {
         await interaction.deferReply();
