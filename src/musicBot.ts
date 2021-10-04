@@ -82,7 +82,7 @@ export async function play(message: Message | CommandInteraction) {
         queue.set(message.guild.id, queueContract);
         queueContract.songs.push(song);
 
-        console.log(queueContract.songs);
+        // console.log(queueContract.songs);
 
         try {
             const connection = joinVoiceChannel({
@@ -100,6 +100,7 @@ export async function play(message: Message | CommandInteraction) {
             queueContract.player = player;
             queueContract.connection = connection;
             connection.once("stateChange", (oldState, newState) => {
+                console.log("stateChange", oldState, newState);
                 if (newState.status === VoiceConnectionStatus.Ready) {
                     console.log("Ready to play.");
                     playSong(message.guild, queueContract.songs[0]);
@@ -138,7 +139,7 @@ async function playSong(guild: Guild, song: Song) {
 
     serverQueue.player.play(resource);
 
-    serverQueue.player.on("stateChange", (oldState, newState) => {
+    serverQueue.player.once("stateChange", (oldState, newState) => {
         if (
             oldState.status === AudioPlayerStatus.Playing &&
             newState.status === AudioPlayerStatus.Idle
