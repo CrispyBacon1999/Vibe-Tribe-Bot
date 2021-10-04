@@ -133,7 +133,7 @@ async function playSong(guild: Guild, song: Song) {
 
     const stream = await ytdl(song.url, {
         filter: "audioonly",
-        // quality: "highestaudio",
+        quality: "highestaudio",
     });
 
     const resource = createAudioResource(stream, {

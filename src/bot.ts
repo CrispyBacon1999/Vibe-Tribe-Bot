@@ -7,6 +7,7 @@ import type {
 import { config } from "dotenv";
 import { Client, Intents } from "discord.js";
 import { PrismaClient } from "@prisma/client";
+import { Player, RepeatMode } from "discord-music-player";
 
 import express from "express";
 import { play, skip, stop } from "./musicBot";
@@ -69,67 +70,157 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
     }
 });
 
+// client.on("messageCreate", async (message) => {
+//     console.log(message.content);
+
+//     if (message.author.bot) return;
+//     if (message.channel.type === "DM") return;
+
+//     const prefix = "!";
+
+//     if (!message.content.startsWith(prefix)) return;
+
+//     const args = message.content.slice(prefix.length).trim().split(/ +/g);
+//     const command = args.shift().toLowerCase();
+//     console.log(command, args);
+
+//     if (command === "deploy" && message.author.id === admin_id) {
+//         await message.guild.commands.set([
+//             {
+//                 name: "play",
+//                 description: "Plays a song",
+//                 options: [
+//                     {
+//                         name: "song",
+//                         type: "STRING" as const,
+//                         description: "The URL of the song to play",
+//                         required: true,
+//                     },
+//                 ],
+//             },
+//             {
+//                 name: "skip",
+//                 description: "Skips the current song",
+//             },
+//             {
+//                 name: "stop",
+//                 description: "Stops the music",
+//             },
+//         ]);
+//         await message.reply("Deployed!");
+//     } else if (command === "play") {
+//         play(message);
+//     } else if (command === "skip") {
+//         skip(message);
+//     } else if (command === "stop") {
+//         stop(message);
+//     }
+// });
+
+// client.on("interactionCreate", async (interaction: Interaction) => {
+//     if (!interaction.isCommand() || !interaction.guildId) return;
+
+//     if (interaction.commandName === "play") {
+//         await interaction.deferReply();
+//         await play(interaction);
+//     }
+//     if (interaction.commandName === "skip") {
+//         await interaction.deferReply();
+//         skip(interaction);
+//     }
+//     if (interaction.commandName === "stop") {
+//         await interaction.deferReply();
+//         stop(interaction);
+//     }
+// });
+
+const player = new Player(client, { leaveOnEmpty: true });
 client.on("messageCreate", async (message) => {
-    console.log(message.content);
+    const args = message.content.slice("!".length).trim().split(/ +/g);
+    const command = args.shift();
+    let guildQueue = player.getQueue(message.guild.id);
 
-    if (message.author.bot) return;
-    if (message.channel.type === "DM") return;
-
-    const prefix = "!";
-
-    if (!message.content.startsWith(prefix)) return;
-
-    const args = message.content.slice(prefix.length).trim().split(/ +/g);
-    const command = args.shift().toLowerCase();
-    console.log(command, args);
-
-    if (command === "deploy" && message.author.id === admin_id) {
-        await message.guild.commands.set([
-            {
-                name: "play",
-                description: "Plays a song",
-                options: [
-                    {
-                        name: "song",
-                        type: "STRING" as const,
-                        description: "The URL of the song to play",
-                        required: true,
-                    },
-                ],
-            },
-            {
-                name: "skip",
-                description: "Skips the current song",
-            },
-            {
-                name: "stop",
-                description: "Stops the music",
-            },
-        ]);
-        await message.reply("Deployed!");
-    } else if (command === "play") {
-        play(message);
-    } else if (command === "skip") {
-        skip(message);
-    } else if (command === "stop") {
-        stop(message);
+    if (command === "play") {
+        let queue = player.createQueue(message.guild.id);
+        await queue.join(message.member.voice.channel);
+        let song = await queue.play(args.join(" ")).catch((_) => {
+            if (!guildQueue) queue.stop();
+        });
     }
-});
 
-client.on("interactionCreate", async (interaction: Interaction) => {
-    if (!interaction.isCommand() || !interaction.guildId) return;
+    if (command === "playlist") {
+        let queue = player.createQueue(message.guild.id);
+        await queue.join(message.member.voice.channel);
+        let song = await queue.playlist(args.join(" ")).catch((_) => {
+            if (!guildQueue) queue.stop();
+        });
+    }
 
-    if (interaction.commandName === "play") {
-        await interaction.deferReply();
-        await play(interaction);
+    if (command === "skip") {
+        guildQueue.skip();
     }
-    if (interaction.commandName === "skip") {
-        await interaction.deferReply();
-        skip(interaction);
+
+    if (command === "stop") {
+        guildQueue.stop();
     }
-    if (interaction.commandName === "stop") {
-        await interaction.deferReply();
-        stop(interaction);
+
+    if (command === "removeLoop") {
+        guildQueue.setRepeatMode(RepeatMode.DISABLED); // or 0 instead of RepeatMode.DISABLED
+    }
+
+    if (command === "toggleLoop") {
+        guildQueue.setRepeatMode(RepeatMode.SONG); // or 1 instead of RepeatMode.SONG
+    }
+
+    if (command === "toggleQueueLoop") {
+        guildQueue.setRepeatMode(RepeatMode.QUEUE); // or 2 instead of RepeatMode.QUEUE
+    }
+
+    if (command === "setVolume") {
+        guildQueue.setVolume(parseInt(args[0]));
+    }
+
+    if (command === "seek") {
+        guildQueue.seek(parseInt(args[0]) * 1000);
+    }
+
+    if (command === "clearQueue") {
+        guildQueue.clearQueue();
+    }
+
+    if (command === "shuffle") {
+        guildQueue.shuffle();
+    }
+
+    if (command === "getQueue") {
+        console.log(guildQueue);
+    }
+
+    if (command === "getVolume") {
+        console.log(guildQueue.volume);
+    }
+
+    if (command === "nowPlaying") {
+        console.log(`Now playing: ${guildQueue.nowPlaying}`);
+    }
+
+    if (command === "pause") {
+        guildQueue.setPaused(true);
+    }
+
+    if (command === "resume") {
+        guildQueue.setPaused(false);
+    }
+
+    if (command === "remove") {
+        guildQueue.remove(parseInt(args[0]));
+    }
+
+    if (command === "createProgressBar") {
+        const ProgressBar = guildQueue.createProgressBar();
+
+        // [======>              ][00:35/2:20]
+        console.log(ProgressBar.prettier);
     }
 });
 
