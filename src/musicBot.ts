@@ -99,12 +99,9 @@ export async function play(message: Message | CommandInteraction) {
             connection.subscribe(player);
             queueContract.player = player;
             queueContract.connection = connection;
-            connection.once("stateChange", (oldState, newState) => {
-                console.log("stateChange", oldState, newState);
-                if (newState.status === VoiceConnectionStatus.Ready) {
-                    console.log("Ready to play.");
-                    playSong(message.guild, queueContract.songs[0]);
-                }
+            connection.once(VoiceConnectionStatus.Ready, () => {
+                console.log("Ready to play");
+                playSong(message.guild, queueContract.songs[0]);
             });
         } catch (error) {
             console.error(error);
@@ -139,14 +136,9 @@ async function playSong(guild: Guild, song: Song) {
 
     serverQueue.player.play(resource);
 
-    serverQueue.player.once("stateChange", (oldState, newState) => {
-        if (
-            oldState.status === AudioPlayerStatus.Playing &&
-            newState.status === AudioPlayerStatus.Idle
-        ) {
-            serverQueue.songs.shift();
-            playSong(guild, serverQueue.songs[0]);
-        }
+    serverQueue.player.once(AudioPlayerStatus.Idle, () => {
+        serverQueue.songs.shift();
+        playSong(guild, serverQueue.songs[0]);
     });
 
     // dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
