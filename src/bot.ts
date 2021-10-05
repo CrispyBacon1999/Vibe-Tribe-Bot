@@ -175,12 +175,18 @@ client.on("messageCreate", async (message) => {
         );
         nowPlayingUnsub = setInterval(() => {
             let guildQueue = player.getQueue(message.guild.id);
-            const progressBar = guildQueue.createProgressBar();
-            latestNowPlaying.edit(
-                `Now playing: **${guildQueue.nowPlaying}**\n\`` +
-                    progressBar +
-                    "`"
-            );
+            try {
+                const progressBar = guildQueue.createProgressBar();
+                latestNowPlaying.edit(
+                    `Now playing: **${guildQueue.nowPlaying}**\n\`` +
+                        progressBar +
+                        "`"
+                );
+            } catch {
+                latestNowPlaying.edit(
+                    `Now playing: **${guildQueue.nowPlaying}**`
+                );
+            }
         }, 5000);
     }
 
@@ -205,13 +211,15 @@ client.on("messageCreate", async (message) => {
 
     if (command === "queue") {
         const queue = player.getQueue(message.guild.id);
-        const songs = queue.songs;
-        let songList = "```\n";
-        for (let i = 0; i < songs.length; i++) {
-            songList += `${i + 1}. ${songs[i].name}\n`;
+        if (queue) {
+            const songs = queue.songs;
+            let songList = "```\n";
+            for (let i = 0; i < songs.length; i++) {
+                songList += `${i + 1}. ${songs[i].name}\n`;
+            }
+            songList += "```";
+            message.reply(songList);
         }
-        songList += "```";
-        message.reply(songList);
     }
 });
 
