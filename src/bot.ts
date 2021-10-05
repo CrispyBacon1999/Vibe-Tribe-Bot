@@ -3,6 +3,8 @@ import type {
     Interaction,
     Message,
     StageChannel,
+    TextBasedChannels,
+    TextChannel,
     VoiceChannel,
 } from "discord.js";
 import { config } from "dotenv";
@@ -72,6 +74,18 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
 let latestNowPlaying: Message = null;
 let nowPlayingUnsub: NodeJS.Timer = null;
 
+const sendDelete = async (
+    channel: TextBasedChannels,
+    message: string,
+    deleteTime: number = 10000
+): Promise<Message> => {
+    const mess = await channel.send(message);
+    setTimeout(() => {
+        mess.delete();
+    }, 10000);
+    return mess;
+};
+
 const player = new Player(client, {
     leaveOnEmpty: true,
     leaveOnEnd: false,
@@ -110,7 +124,7 @@ client.on("messageCreate", async (message) => {
             if (!guildQueue) queue.stop();
         });
         if (song) {
-            message.reply(`Now playing: **${song.name}**`);
+            sendDelete(message.channel, `Added **${song.name}** to the queue`);
         }
     }
 
@@ -124,12 +138,15 @@ client.on("messageCreate", async (message) => {
 
     if (command === "skip") {
         guildQueue.skip();
-        message.channel.send(`Now playing: **${guildQueue.nowPlaying}**`);
+        sendDelete(
+            message.channel,
+            `Now playing: **${guildQueue.nowPlaying}**`
+        );
     }
 
     if (command === "stop") {
         guildQueue.stop();
-        message.channel.send("Stopping.");
+        sendDelete(message.channel, "Stopping.");
     }
 
     if (command === "removeLoop") {
@@ -160,17 +177,9 @@ client.on("messageCreate", async (message) => {
         guildQueue.shuffle();
     }
 
-    if (command === "getQueue") {
-        console.log(guildQueue);
-    }
-
-    if (command === "getVolume") {
-        console.log(guildQueue.volume);
-    }
-
     if (command === "nowPlaying") {
         if (nowPlayingUnsub) clearInterval(nowPlayingUnsub);
-        latestNowPlaying = await message.reply(
+        latestNowPlaying = await message.channel.send(
             `Now playing: **${guildQueue.nowPlaying}**`
         );
         nowPlayingUnsub = setInterval(() => {
@@ -179,7 +188,7 @@ client.on("messageCreate", async (message) => {
                 const progressBar = guildQueue.createProgressBar();
                 latestNowPlaying.edit(
                     `Now playing: **${guildQueue.nowPlaying}**\n\`` +
-                        progressBar +
+                        progressBar.prettier +
                         "`"
                 );
             } catch {
@@ -218,7 +227,7 @@ client.on("messageCreate", async (message) => {
                 songList += `${i + 1}. ${songs[i].name}\n`;
             }
             songList += "```";
-            message.reply(songList);
+            sendDelete(message.channel, songList, 60000);
         }
     }
 });
