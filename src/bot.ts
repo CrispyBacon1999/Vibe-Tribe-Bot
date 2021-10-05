@@ -77,6 +77,13 @@ const player = new Player(client, {
     leaveOnEnd: false,
     leaveOnStop: false,
 });
+player.on("songFirst", (queue, song) => {
+    client.user?.setActivity({
+        name: song.name,
+        type: "LISTENING",
+    });
+});
+
 player.on("songChanged", (queue, song, old) => {
     client.user?.setActivity({
         name: song.name,
