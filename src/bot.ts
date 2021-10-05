@@ -32,12 +32,10 @@ const client = new Client({
 
 client.once("ready", () => {
     console.log("Ready!");
-    client.user?.setActivity(
-        `Voice Chats${
-            HEROKU_RELEASE_VERSION ? " : " + HEROKU_RELEASE_VERSION : ""
-        }`,
-        { type: "WATCHING" }
-    );
+    client.user?.setActivity({
+        name: "Nothing",
+        type: "LISTENING",
+    });
 });
 
 client.on("voiceStateUpdate", async (oldMember, newMember) => {
@@ -70,71 +68,25 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
     }
 });
 
-// client.on("messageCreate", async (message) => {
-//     console.log(message.content);
+const player = new Player(client, {
+    leaveOnEmpty: true,
+    leaveOnEnd: false,
+    leaveOnStop: false,
+});
+player.on("songChanged", (queue, song, old) => {
+    client.user?.setActivity({
+        name: song.name,
+        type: "LISTENING",
+    });
+});
 
-//     if (message.author.bot) return;
-//     if (message.channel.type === "DM") return;
+player.on("queueEnd", (queue) => {
+    client.user?.setActivity({
+        name: "Nothing",
+        type: "LISTENING",
+    });
+});
 
-//     const prefix = "!";
-
-//     if (!message.content.startsWith(prefix)) return;
-
-//     const args = message.content.slice(prefix.length).trim().split(/ +/g);
-//     const command = args.shift().toLowerCase();
-//     console.log(command, args);
-
-//     if (command === "deploy" && message.author.id === admin_id) {
-//         await message.guild.commands.set([
-//             {
-//                 name: "play",
-//                 description: "Plays a song",
-//                 options: [
-//                     {
-//                         name: "song",
-//                         type: "STRING" as const,
-//                         description: "The URL of the song to play",
-//                         required: true,
-//                     },
-//                 ],
-//             },
-//             {
-//                 name: "skip",
-//                 description: "Skips the current song",
-//             },
-//             {
-//                 name: "stop",
-//                 description: "Stops the music",
-//             },
-//         ]);
-//         await message.reply("Deployed!");
-//     } else if (command === "play") {
-//         play(message);
-//     } else if (command === "skip") {
-//         skip(message);
-//     } else if (command === "stop") {
-//         stop(message);
-//     }
-// });
-
-// client.on("interactionCreate", async (interaction: Interaction) => {
-//     if (!interaction.isCommand() || !interaction.guildId) return;
-
-//     if (interaction.commandName === "play") {
-//         await interaction.deferReply();
-//         await play(interaction);
-//     }
-//     if (interaction.commandName === "skip") {
-//         await interaction.deferReply();
-//         skip(interaction);
-//     }
-//     if (interaction.commandName === "stop") {
-//         await interaction.deferReply();
-//         stop(interaction);
-//     }
-// });
-
-const player = new Player(client, { leaveOnEmpty: true });
 client.on("messageCreate", async (message) => {
     const args = message.content.slice("!".length).trim().split(/ +/g);
     const command = args.shift();
@@ -146,6 +98,9 @@ client.on("messageCreate", async (message) => {
         let song = await queue.play(args.join(" ")).catch((_) => {
             if (!guildQueue) queue.stop();
         });
+        if (song) {
+            message.reply(`Now playing: **${song.name}**`);
+        }
     }
 
     if (command === "playlist") {
@@ -158,10 +113,12 @@ client.on("messageCreate", async (message) => {
 
     if (command === "skip") {
         guildQueue.skip();
+        message.channel.send(`Now playing: **${guildQueue.nowPlaying}**`);
     }
 
     if (command === "stop") {
         guildQueue.stop();
+        message.channel.send("Stopping.");
     }
 
     if (command === "removeLoop") {
@@ -201,7 +158,7 @@ client.on("messageCreate", async (message) => {
     }
 
     if (command === "nowPlaying") {
-        console.log(`Now playing: ${guildQueue.nowPlaying}`);
+        message.reply(`Now playing: **${guildQueue.nowPlaying}**`);
     }
 
     if (command === "pause") {
@@ -221,6 +178,17 @@ client.on("messageCreate", async (message) => {
 
         // [======>              ][00:35/2:20]
         console.log(ProgressBar.prettier);
+    }
+
+    if (command === "queue") {
+        const queue = player.getQueue(message.guild.id);
+        const songs = queue.songs;
+        let songList = "```\n";
+        for (let i = 0; i < songs.length; i++) {
+            songList += `${i + 1}. ${songs[i].name}\n`;
+        }
+        songList += "```";
+        message.reply(songList);
     }
 });
 
