@@ -1,13 +1,14 @@
 import type {
     GuildMember,
     Interaction,
+    Message,
     StageChannel,
     VoiceChannel,
 } from "discord.js";
 import { config } from "dotenv";
 import { Client, Intents } from "discord.js";
 import { PrismaClient } from "@prisma/client";
-import { Player, RepeatMode } from "discord-music-player";
+import { Player, ProgressBar, RepeatMode } from "discord-music-player";
 
 import express from "express";
 import { play, skip, stop } from "./musicBot";
@@ -67,6 +68,9 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
         }
     }
 });
+
+let latestNowPlaying: Message = null;
+let nowPlayingUnsub: NodeJS.Timer = null;
 
 const player = new Player(client, {
     leaveOnEmpty: true,
@@ -158,7 +162,19 @@ client.on("messageCreate", async (message) => {
     }
 
     if (command === "nowPlaying") {
-        message.reply(`Now playing: **${guildQueue.nowPlaying}**`);
+        if (nowPlayingUnsub) clearInterval(nowPlayingUnsub);
+        latestNowPlaying = await message.reply(
+            `Now playing: **${guildQueue.nowPlaying}**`
+        );
+        nowPlayingUnsub = setInterval(() => {
+            let guildQueue = player.getQueue(message.guild.id);
+            const progressBar = guildQueue.createProgressBar();
+            latestNowPlaying.edit(
+                `Now playing: **${guildQueue.nowPlaying}**\n\`` +
+                    progressBar +
+                    "`"
+            );
+        }, 5000);
     }
 
     if (command === "pause") {
