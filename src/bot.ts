@@ -106,7 +106,7 @@ const player = new Player(client, {
 });
 const nowPlayingEmbed = (guildId: string) => {
     const queue = player.getQueue(guildId);
-    const current = queue.songs.length > 0 ? queue.songs[0] : null;
+    const current = queue && queue.songs.length > 0 ? queue.songs[0] : null;
 
     const embed = new MessageEmbed()
         .setColor("#FF0000")
