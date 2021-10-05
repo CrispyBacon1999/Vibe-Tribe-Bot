@@ -1,16 +1,18 @@
-import type {
+import {
     GuildMember,
     Interaction,
     Message,
+    MessageEmbed,
     StageChannel,
     TextBasedChannels,
     TextChannel,
     VoiceChannel,
+    VoiceState,
 } from "discord.js";
 import { config } from "dotenv";
 import { Client, Intents } from "discord.js";
 import { PrismaClient } from "@prisma/client";
-import { Player, ProgressBar, RepeatMode } from "discord-music-player";
+import { Player, ProgressBar, RepeatMode, Song } from "discord-music-player";
 
 import express from "express";
 import { play, skip, stop } from "./musicBot";
@@ -41,35 +43,46 @@ client.once("ready", () => {
     });
 });
 
-client.on("voiceStateUpdate", async (oldMember, newMember) => {
-    if (oldMember.member.user.bot) return;
-    if (newMember.member.user.bot) return;
-
-    const oldChannel = oldMember.channel;
-    const newChannel = newMember.channel;
-
-    if (newMember.mute !== oldMember.mute) {
-        console.log("Toggled mute");
-        await testLiveAndSet(newChannel);
-    } else if (newMember.deaf !== oldMember.deaf) {
-        console.log("Toggled deafen");
-        await testLiveAndSet(newChannel);
-    } else {
-        // Channel changed
-        if (!oldChannel && newChannel) {
-            console.log("Joined new channel");
-            await testLiveAndSet(newChannel);
-        } else if (!newChannel && oldChannel) {
-            console.log("Left channel");
-            await testLiveAndSet(oldChannel);
-        } else if (oldChannel && newChannel) {
-            console.log("Switched channels");
-
-            await testLiveAndSet(oldChannel);
-            await testLiveAndSet(newChannel);
+client.on("interactionCreate", async (interaction: Interaction) => {
+    if (interaction.isCommand()) {
+        const { commandName } = interaction;
+        if (commandName === "play") {
         }
     }
 });
+
+client.on(
+    "voiceStateUpdate",
+    async (oldMember: VoiceState, newMember: VoiceState) => {
+        if (oldMember.member.user.bot) return;
+        if (newMember.member.user.bot) return;
+
+        const oldChannel = oldMember.channel;
+        const newChannel = newMember.channel;
+
+        if (newMember.mute !== oldMember.mute) {
+            console.log("Toggled mute");
+            await testLiveAndSet(newChannel);
+        } else if (newMember.deaf !== oldMember.deaf) {
+            console.log("Toggled deafen");
+            await testLiveAndSet(newChannel);
+        } else {
+            // Channel changed
+            if (!oldChannel && newChannel) {
+                console.log("Joined new channel");
+                await testLiveAndSet(newChannel);
+            } else if (!newChannel && oldChannel) {
+                console.log("Left channel");
+                await testLiveAndSet(oldChannel);
+            } else if (oldChannel && newChannel) {
+                console.log("Switched channels");
+
+                await testLiveAndSet(oldChannel);
+                await testLiveAndSet(newChannel);
+            }
+        }
+    }
+);
 
 let latestNowPlaying: Message = null;
 let nowPlayingUnsub: NodeJS.Timer = null;
@@ -91,6 +104,26 @@ const player = new Player(client, {
     leaveOnEnd: false,
     leaveOnStop: false,
 });
+const nowPlayingEmbed = (guildId: string) => {
+    const queue = player.getQueue(guildId);
+    const current = queue.songs.length > 0 ? queue.songs[0] : null;
+
+    const embed = new MessageEmbed()
+        .setColor("#FF0000")
+        .setTitle(current !== null ? current.name : "Nothing playing")
+        .setURL(current !== null ? current.url : "")
+        .setThumbnail(current !== null ? current.thumbnail : "")
+        .addFields({
+            name: "Artist",
+            value: current !== null ? current.author : "",
+        });
+
+    try {
+        const progressBar = queue.createProgressBar();
+        embed.setDescription(progressBar.prettier);
+    } catch {}
+    return embed;
+};
 player.on("songFirst", (queue, song) => {
     client.user?.setActivity({
         name: song.name,
@@ -179,23 +212,26 @@ client.on("messageCreate", async (message) => {
 
     if (command === "nowPlaying") {
         if (nowPlayingUnsub) clearInterval(nowPlayingUnsub);
-        latestNowPlaying = await message.channel.send(
-            `Now playing: **${guildQueue.nowPlaying}**`
-        );
+        latestNowPlaying = await message.channel.send({
+            embeds: [nowPlayingEmbed(message.guild.id)],
+        });
         nowPlayingUnsub = setInterval(() => {
-            let guildQueue = player.getQueue(message.guild.id);
-            try {
-                const progressBar = guildQueue.createProgressBar();
-                latestNowPlaying.edit(
-                    `Now playing: **${guildQueue.nowPlaying}**\n\`` +
-                        progressBar.prettier +
-                        "`"
-                );
-            } catch {
-                latestNowPlaying.edit(
-                    `Now playing: **${guildQueue.nowPlaying}**`
-                );
-            }
+            // let guildQueue = player.getQueue(message.guild.id);
+            // try {
+            //     const progressBar = guildQueue.createProgressBar();
+            //     latestNowPlaying.edit(
+            //         `Now playing: **${guildQueue.nowPlaying}**\n\`` +
+            //             progressBar.prettier +
+            //             "`"
+            //     );
+            // } catch {
+            //     latestNowPlaying.edit(
+            //         `Now playing: **${guildQueue.nowPlaying}**`
+            //     );
+            // }
+            latestNowPlaying.edit({
+                embeds: [nowPlayingEmbed(message.guild.id)],
+            });
         }, 5000);
     }
 
