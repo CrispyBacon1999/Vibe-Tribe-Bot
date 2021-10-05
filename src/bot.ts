@@ -110,7 +110,11 @@ const nowPlayingEmbed = (guildId: string) => {
 
     const embed = new MessageEmbed()
         .setColor("#FF0000")
-        .setTitle(current !== null ? current.name : "Nothing playing")
+        .setTitle(
+            current !== null
+                ? current.name.replace(/|/, "\\|")
+                : "Nothing playing"
+        )
         .setURL(current !== null ? current.url : "")
         .setThumbnail(current !== null ? current.thumbnail : "")
         .addFields({
@@ -120,7 +124,7 @@ const nowPlayingEmbed = (guildId: string) => {
 
     try {
         const progressBar = queue.createProgressBar();
-        embed.setDescription(progressBar.prettier);
+        embed.setDescription("`" + progressBar.prettier + "`");
     } catch {}
     return embed;
 };
