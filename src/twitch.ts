@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import fetch from "node-fetch";
+import axios from "axios";
 type AppTokenData = {
     access_token?: string;
     refresh_token?: string;
@@ -32,22 +32,23 @@ export const getAccessToken = async (): Promise<string> => {
 };
 
 const generateAccessToken = async (): Promise<AppTokenData> => {
-    const twitchResponse = await fetch(
+    const twitchResponse = await axios.get(
         twitchAccessTokenUrl +
             `?client_id=${clientId}&client_secret=${clientSecret}&grant_type=client_credentials`
-    ).then((res) => res.json());
+    );
 
-    const newToken: AppTokenData = twitchResponse;
+    const newToken: AppTokenData = twitchResponse.data;
     newToken.expires_at = Date.now() + newToken.expires_in * 1000;
     return newToken;
 };
 
 export const isChannelLive = async (channelName: string): Promise<boolean> => {
     const token = await getAccessToken();
-    const channelResponse = (await fetch(
-        twitchStreamsUrl + `user_login=${channelName}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-    ).then((res) => res.json())) as any;
+    const channelResponse = (
+        await axios.get(twitchStreamsUrl + `user_login=${channelName}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+    ).data as any;
     console.log(channelResponse);
     return channelResponse.type === "live";
 };
