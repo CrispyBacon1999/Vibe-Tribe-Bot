@@ -309,11 +309,11 @@ async function checkLiveStatuses(channel: VoiceChannel | StageChannel) {
                 if (activity.type === "STREAMING" && activity.url) {
                     // Check only activity status currently.
                     return resolve(true);
-                } else {
-                    const twitchChannel = await getTwitchChannelFromUser(
-                        member.user.id
-                    );
-                    return await isChannelLive(twitchChannel);
+                    // } else {
+                    //     const twitchChannel = await getTwitchChannelFromUser(
+                    //         member.user.id
+                    //     );
+                    //     return await isChannelLive(twitchChannel);
                 }
             } // forEach activity
         } // forEach member
