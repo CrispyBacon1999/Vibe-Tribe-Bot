@@ -337,6 +337,13 @@ async function setLiveChannel(channel: VoiceChannel | StageChannel) {
 
     console.log("Channel Name: ", name);
 
+    channel.permissionOverwrites.create("900576907496661044", {
+        CONNECT: false,
+    });
+    channel.permissionOverwrites.create("847215351237836860", {
+        CONNECT: false,
+    });
+
     const newData = await prisma.channel.upsert({
         where: { channelId: channel.id },
         create: {
@@ -365,6 +372,9 @@ async function setNotLiveChannel(channel: VoiceChannel | StageChannel) {
     }
 
     console.log("Channel Name: ", name);
+
+    channel.permissionOverwrites.edit("900576907496661044", { CONNECT: null });
+    channel.permissionOverwrites.edit("847215351237836860", { CONNECT: null });
 
     await prisma.channel.upsert({
         where: { channelId: channel.id },
