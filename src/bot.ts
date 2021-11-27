@@ -186,7 +186,9 @@ client.on("messageCreate", async (message) => {
     }
 
     if (command === "stop") {
-        guildQueue.stop();
+        if (guildQueue.songs.length > 0) {
+            guildQueue.stop();
+        }
         sendDelete(message.channel, "Stopping.");
     }
 
