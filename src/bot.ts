@@ -227,7 +227,11 @@ client.on("messageCreate", async (message) => {
     }
 
     if (command === "simvibes") {
-        if (guildQueue.songs.length > 0) {
+        if (
+            guildQueue !== undefined &&
+            guildQueue.songs !== undefined &&
+            guildQueue.songs.length > 0
+        ) {
             guildQueue.stop();
         }
 
