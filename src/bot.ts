@@ -253,14 +253,14 @@ client.on("messageCreate", async (message) => {
 
         audioPlayer.play(stream);
         audioPlayer.on("stateChange", (newState) => {
-            console.log("Changing State: " + newState);
+            console.log("Changing State: " + newState.status);
             if (newState.status !== AudioPlayerStatus.Playing) {
                 audioPlayer.play(stream);
             }
         });
 
         audioPlayer.on("error", (err) => {
-            console.error(err);
+            console.error(JSON.stringify(err));
         });
         const subscription = connection.subscribe(audioPlayer);
         await message.reply("Now playing SimulatorVibes");
