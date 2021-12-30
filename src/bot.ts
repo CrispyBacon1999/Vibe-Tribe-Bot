@@ -259,6 +259,9 @@ client.on("messageCreate", async (message) => {
                 // newState.status !== AudioPlayerStatus.Idle
             ) {
                 // audioPlayer.stop();
+                const stream = createAudioResource(
+                    "https://stream.simulatorvibes.com/radio/8000/radio"
+                );
                 audioPlayer.play(stream);
             }
         });
