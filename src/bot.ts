@@ -254,8 +254,10 @@ client.on("messageCreate", async (message) => {
         audioPlayer.play(stream);
         audioPlayer.on("stateChange", (newState) => {
             console.log("Changing State: " + newState.status);
+            const memberCount = voiceChannel.members.size;
             if (
-                newState.status !== AudioPlayerStatus.Buffering
+                newState.status !== AudioPlayerStatus.Buffering &&
+                memberCount > 0
                 // newState.status !== AudioPlayerStatus.Idle
             ) {
                 // audioPlayer.stop();
@@ -263,6 +265,11 @@ client.on("messageCreate", async (message) => {
                     "https://stream.simulatorvibes.com/radio/8000/radio"
                 );
                 audioPlayer.play(stream);
+            }
+            if (memberCount === 0) {
+                audioPlayer.removeAllListeners();
+                audioPlayer.stop();
+                connection.disconnect();
             }
         });
 
