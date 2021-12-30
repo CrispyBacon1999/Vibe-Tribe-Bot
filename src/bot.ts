@@ -18,6 +18,7 @@ import express from "express";
 import { play, skip, stop } from "./musicBot";
 import { getTwitchChannelFromUser, isChannelLive } from "./twitch";
 import {
+    AudioPlayerStatus,
     createAudioPlayer,
     createAudioResource,
     getVoiceConnection,
@@ -248,10 +249,14 @@ client.on("messageCreate", async (message) => {
         const stream = createAudioResource(
             "https://stream.simulatorvibes.com/radio/8000/radio"
         );
-        const audioPlayer = createAudioPlayer();
+        const audioPlayer = createAudioPlayer({});
 
         audioPlayer.play(stream);
-
+        audioPlayer.on("stateChange", (newState) => {
+            if (newState.status !== AudioPlayerStatus.Playing) {
+                audioPlayer.play(stream);
+            }
+        });
         const subscription = connection.subscribe(audioPlayer);
         await message.reply("Now playing SimulatorVibes");
         client.user?.setActivity({
