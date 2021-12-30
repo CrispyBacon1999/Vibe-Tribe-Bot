@@ -254,7 +254,11 @@ client.on("messageCreate", async (message) => {
         audioPlayer.play(stream);
         audioPlayer.on("stateChange", (newState) => {
             console.log("Changing State: " + newState.status);
-            if (newState.status !== AudioPlayerStatus.Playing) {
+            if (
+                newState.status !== AudioPlayerStatus.Buffering &&
+                newState.status !== AudioPlayerStatus.Idle
+            ) {
+                audioPlayer.stop();
                 audioPlayer.play(stream);
             }
         });
