@@ -17,6 +17,12 @@ import { Player, ProgressBar, RepeatMode, Song } from "discord-music-player";
 import express from "express";
 import { play, skip, stop } from "./musicBot";
 import { getTwitchChannelFromUser, isChannelLive } from "./twitch";
+import {
+    createAudioPlayer,
+    createAudioResource,
+    getVoiceConnection,
+    joinVoiceChannel,
+} from "@discordjs/voice";
 
 config();
 
@@ -220,6 +226,36 @@ client.on("messageCreate", async (message) => {
         guildQueue.shuffle();
     }
 
+    if (command === "simvibes") {
+        if (guildQueue.songs.length > 0) {
+            guildQueue.stop();
+        }
+
+        const voiceChannel =
+            message instanceof Message && message.member instanceof GuildMember
+                ? message.member.voice.channel
+                : null;
+
+        const connection = joinVoiceChannel({
+            channelId: voiceChannel.id,
+            guildId: message.guild.id,
+            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+        });
+        const stream = createAudioResource(
+            "https://stream.simulatorvibes.com/radio/8000/radio"
+        );
+        const audioPlayer = createAudioPlayer();
+
+        audioPlayer.play(stream);
+
+        const subscription = connection.subscribe(audioPlayer);
+        await message.reply("Now playing SimulatorVibes");
+        client.user?.setActivity({
+            name: "SimulatorVibes",
+            type: "LISTENING",
+        });
+    }
+
     if (command === "nowPlaying") {
         if (nowPlayingUnsub) clearInterval(nowPlayingUnsub);
         latestNowPlaying = await message.channel.send({
@@ -354,7 +390,7 @@ async function setLiveChannel(channel: VoiceChannel | StageChannel) {
             guildId: channel.guild.id,
             live: true,
         },
-        update: { live: true },
+        update: { live: true, name: channel.name }, // Update channel name and live state
     });
 
     console.log(`Changing Channel name to: 🔴[LIVE] ${name}`);
