@@ -161,6 +161,7 @@ player.on("queueEnd", (queue) => {
 });
 
 client.on("messageCreate", async (message) => {
+    if (!message.content.startsWith("!")) return;
     const args = message.content.slice("!".length).trim().split(/ +/g);
     const command = args.shift();
     let guildQueue = player.getQueue(message.guild.id);
